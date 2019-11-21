@@ -1,0 +1,48 @@
+version: "3.5"
+
+services:
+  # ELK
+  elasticsearch:
+    image: library/elasticsearch:6.5.0
+    volumes:
+      # for persistent data
+      - ./elasticsearch-data:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+      - 9300
+    restart: always
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+    networks:
+      - master
+    deploy:
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 1G
+
+  kibana:
+    image: library/kibana:6.5.0
+    ports:
+      - 5601:5601
+    networks:
+      - master
+    depends_on:
+      - elasticsearch
+    deploy:
+      restart_policy:
+        condition: on-failure
+    labels:
+      - "traefik.backend=kibana"
+      - "traefik.docker.network=${network_name:-masternetwork}"
+      - "traefik.frontend.rule=Host:kibana.${BASE_URL:-localhost}" # add another rule with ";Host:host"
+      - "traefik.enable=true"
+      - "traefik.port=5601"
+
+networks:
+  # Network mostly needed for swarm
+  # Set to bridge to test locally and have ports be outside accessible
+  master:
+    name: "${network_name:-masternetwork}"
+    driver: overlay
