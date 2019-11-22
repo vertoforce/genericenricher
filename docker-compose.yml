@@ -40,6 +40,22 @@ services:
       - "traefik.enable=true"
       - "traefik.port=5601"
 
+  # FTP server
+  ftp:
+    image: stilliard/pure-ftpd:hardened
+    ports:
+      - "21:21"
+      - "30000-30009:30000-30009"
+    volumes: # remember to replace /folder_on_disk/ with the path to where you want to store the files on the host machine
+      - "./ftpdata:/home/username/"
+      - "./passwd:/etc/pure-ftpd/passwd"
+    environment:
+      PUBLICHOST: "localhost"
+      FTP_USER_NAME: username
+      FTP_USER_PASS: mypass
+      FTP_USER_HOME: /home/username
+    restart: always
+
 networks:
   # Network mostly needed for swarm
   # Set to bridge to test locally and have ports be outside accessible

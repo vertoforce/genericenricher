@@ -53,6 +53,8 @@ func NewELK(urlString string) (*ELKClient, error) {
 		return nil, err
 	}
 
+	// TODO: Check for user/pass
+
 	// Set up reader
 	client.ResetReader()
 
@@ -140,6 +142,7 @@ func (client *ELKClient) getAllData(ctx context.Context) chan []byte {
 	// Make sure we are connected
 	if !client.IsConnected() {
 		close(entries)
+		return entries
 	}
 
 	go func() {

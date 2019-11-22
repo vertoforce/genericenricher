@@ -8,6 +8,32 @@ import (
 	"testing"
 )
 
+func TestGetServerWithType(t *testing.T) {
+	tests := []struct {
+		url        string
+		serverType enrichers.ServerType
+		ip         net.IP
+		port       uint16
+	}{
+		// Local ELK
+		{"http://localhost:9200", enrichers.ELK, net.IPv6loopback, 9200},
+		// Local FTP
+		{"ftp://username:mypass@localhost:21", enrichers.FTP, net.IPv6loopback, 21},
+	}
+
+	for _, test := range tests {
+		server, err := GetServerWithType(test.url, test.serverType)
+		if err != nil {
+			t.Errorf("Failed to create server")
+			continue
+		}
+		err = checkServerFunctionality(server, test.ip, test.port)
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+	}
+}
+
 func checkServerFunctionality(s Server, ip net.IP, port uint16) error {
 	// Check IP and Port
 	if !s.GetIP().Equal(ip) {
@@ -45,27 +71,4 @@ func checkServerFunctionality(s Server, ip net.IP, port uint16) error {
 	}
 
 	return nil
-}
-
-func TestGetServerWithType(t *testing.T) {
-	tests := []struct {
-		url        string
-		serverType enrichers.ServerType
-		ip         net.IP
-		port       uint16
-	}{
-		// Local ELK
-		{"http://localhost:9200", enrichers.ELK, net.IPv6loopback, 9200},
-	}
-
-	for _, test := range tests {
-		server, err := GetServerWithType(test.url, test.serverType)
-		if err != nil {
-			t.Errorf("Failed to create server")
-		}
-		err = checkServerFunctionality(server, test.ip, test.port)
-		if err != nil {
-			t.Errorf(err.Error())
-		}
-	}
 }
