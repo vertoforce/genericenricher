@@ -16,10 +16,20 @@ import (
 
 // ELKClient ELK Connection
 type ELKClient struct {
-	IP     net.IP
-	Port   int16
-	URL    string
+	IP   net.IP
+	Port int16
+	URL  string
+
+	// Internal
 	client *elastic.Client
+	// Reading stream
+	readCtx          context.Context
+	indices          []ELKIndex
+	curIndex         int                   // Current Index
+	curIndexReader   chan *json.RawMessage // Current Index reader (from GetJSONData)
+	curRawMessage    *json.RawMessage      // Current JSON from index
+	curRawMessagePos int                   // Current position in JSON from index
+	curPPos          int                   // Current position in given buffer
 }
 
 // ELKIndex ELK Index
@@ -47,14 +57,14 @@ func NewELK(urlString string) (*ELKClient, error) {
 		return nil, err
 	}
 
-	// Get Port
+	// Set Port
 	port, err := strconv.ParseInt(urlObj.Port(), 10, 16)
 	if err != nil {
 		return nil, err
 	}
 	client.Port = int16(port)
 
-	// Get IPs
+	// Set IP
 	addrs, err := net.LookupHost(urlObj.Hostname())
 	if err != nil {
 		return nil, err
@@ -63,6 +73,9 @@ func NewELK(urlString string) (*ELKClient, error) {
 		return nil, errors.New("Invalid hostname")
 	}
 	client.IP = net.ParseIP(addrs[0])
+
+	// Set internals
+	client.Reset()
 
 	return &client, client.Connect()
 }
@@ -100,21 +113,91 @@ func (client *ELKClient) Type() ServerType {
 
 // Close server
 func (client *ELKClient) Close() error {
+	client.curIndex = -1
 	client.client.Stop()
 	return nil
 }
 
 // Read Returns all data from all indices on server
 func (client *ELKClient) Read(p []byte) (n int, err error) {
-	// TODO: Implement
-	// Go through each index and read all data from it
-	return 0, nil
+	// Make sure we are connected
+	if !client.IsConnected() {
+		return 0, errors.New("not connected to server")
+	}
+
+	// Check what state we are in
+	switch {
+	case client.curIndex == -1:
+		// Get indices and pick first one
+		client.indices, err = client.GetIndices(client.readCtx)
+		if err != nil {
+			return 0, err
+		}
+		client.curIndex = 0
+
+		// Recurs to next step
+		return client.Read(p)
+	case client.curIndexReader == nil:
+		// Check if we finished reading indices
+		if client.curIndex >= len(client.indices) {
+			return 0, io.EOF
+		}
+
+		// Open index for reading
+		client.curIndexReader = client.GetJSONData(client.readCtx, client.indices[client.curIndex].Index, -1)
+
+		// Recurs to next step
+		return client.Read(p)
+	case client.curRawMessage == nil:
+		// Start reading from this index
+		buf, ok := <-client.curIndexReader
+		if !ok {
+			// end of this index, move on
+			client.curIndex++
+			client.curIndexReader = nil
+			return client.Read(p)
+		}
+		client.curRawMessage = buf
+		client.curRawMessagePos = 0
+
+		// Recurs to next step
+		return client.Read(p)
+	default:
+		// Now we have a buf
+
+		// Copy to p and see if we need to copy more
+		copied, needNextSource := readIntoP(p, &client.curPPos, &client.curRawMessagePos, *client.curRawMessage)
+		if needNextSource {
+			// Need to read more data into this p
+
+			// Reset to go to next entry
+			client.curRawMessage = nil
+
+			// Read more data
+			read, err := client.Read(p)
+			return read + copied, err
+		}
+
+		// We are done
+		return copied, nil
+	}
+}
+
+// Reset reader back to initial state
+func (client *ELKClient) Reset() {
+	client.readCtx = context.Background()
+	client.indices = nil
+	client.curIndex = -1
+	client.curIndexReader = nil
+	client.curRawMessage = nil
+	client.curRawMessagePos = 0
+	client.curPPos = 0
 }
 
 // GetIndicesMatchingRules Return all indices that have contents that match a rule in the provided ruleset.
 func (client *ELKClient) GetIndicesMatchingRules(ctx context.Context, rules []*regexp.Regexp, maxDocsToCheck int64) ([]ELKIndex, error) {
 	// Get indices
-	indices, err := client.GetIndices()
+	indices, err := client.GetIndices(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -143,9 +226,9 @@ func (client *ELKClient) GetIndicesMatchingRules(ctx context.Context, rules []*r
 }
 
 // GetIndices Get indices on server
-func (client *ELKClient) GetIndices() ([]ELKIndex, error) {
+func (client *ELKClient) GetIndices(ctx context.Context) ([]ELKIndex, error) {
 	// Get indices
-	indices, err := client.client.CatIndices().Do(context.Background())
+	indices, err := client.client.CatIndices().Do(ctx)
 	if err != nil {
 		return nil, err
 	}

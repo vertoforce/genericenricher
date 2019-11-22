@@ -54,3 +54,24 @@ func StringSizeToUint(size string) uint64 {
 
 	return uint64(got)
 }
+
+// readIntoP Given a byte array, fill in from the source.
+// returns number of bytes copied and if we need more data to fill in to p
+func readIntoP(p []byte, pPos, sourcePos *int, source []byte) (n int, needNextSource bool) {
+	copied := copy(p[*pPos:], source[*sourcePos:])
+	*pPos += copied
+	*sourcePos += copied
+
+	if *pPos == len(p) {
+		// We reached the end of this buffer, we are done
+		*pPos = 0
+		return copied, false
+	} else if *pPos > len(p) {
+		// This should never happen
+		panic("copied more data into size of buf array")
+	} else { //*pPos < len(p)
+		// We have more to fill in here, go to next item
+		*sourcePos = 0
+		return copied, true
+	}
+}

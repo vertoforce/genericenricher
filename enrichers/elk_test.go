@@ -3,6 +3,7 @@ package enrichers
 import (
 	"context"
 	"fmt"
+	"io"
 	"regexmachine"
 	"testing"
 )
@@ -44,7 +45,7 @@ func TestGetIndices(t *testing.T) {
 	}
 
 	// Get indices
-	indices, err := con.GetIndices()
+	indices, err := con.GetIndices(context.Background())
 	if err != nil {
 		t.Errorf("failed to connect")
 		return
@@ -68,6 +69,7 @@ func TestGetIndices(t *testing.T) {
 
 // Testing index with more than 1 entry
 var testingIndex = ".kibana"
+var sizeOfTestingELK = 162
 
 func TestGetData(t *testing.T) {
 	con, err := NewELK("http://127.0.0.1:9200")
@@ -108,4 +110,44 @@ func TestGetData(t *testing.T) {
 	if totalHits == 0 {
 		t.Errorf("No data found on index `%s`", testingIndex)
 	}
+}
+
+func TestRead(t *testing.T) {
+	con, err := NewELK("http://127.0.0.1:9200")
+	if err != nil {
+		t.Errorf("failed to connect")
+		return
+	}
+
+	// See if we can read in pieces
+	// First piece
+	p := make([]byte, sizeOfTestingELK/2)
+	read, err := con.Read(p)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	if read != sizeOfTestingELK/2 {
+		t.Errorf("Did not read fully into buffer")
+	}
+	// Second piece
+	p = make([]byte, sizeOfTestingELK)
+	read, err = con.Read(p)
+	if err != io.EOF && err != nil {
+		t.Errorf(err.Error())
+	}
+	if read != sizeOfTestingELK-sizeOfTestingELK/2 {
+		t.Errorf("Did not read ")
+	}
+
+	// See if we can reset and read it all
+	con.Reset()
+
+	p = make([]byte, sizeOfTestingELK)
+	read, err = con.Read(p)
+	if read != sizeOfTestingELK {
+		t.Errorf("Did not read entire index")
+	}
+	fmt.Println(string(p))
+
+	// TODO: Test larger index
 }
