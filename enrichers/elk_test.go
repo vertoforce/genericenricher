@@ -178,6 +178,19 @@ func TestRead(t *testing.T) {
 		t.Errorf("Did not read entire index")
 	}
 	fmt.Println(string(p))
+}
 
-	// TODO: Test larger index
+func TestReadLarge(t *testing.T) {
+	con, err := NewELK("http://127.0.0.1:9200")
+	if err != nil {
+		t.Errorf("failed to connect")
+		return
+	}
+
+	p := make([]byte, 1024*1024)
+	read, err := con.Read(p)
+	fmt.Printf("Read %d bytes with error %v\n", read, err)
+
+	// Save to file
+	// ioutil.WriteFile("out.txt", p[0:read], 0755)
 }
