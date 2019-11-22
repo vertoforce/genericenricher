@@ -11,6 +11,9 @@ import (
 
 // Server Interface to read data straight from a server
 type Server interface {
+	// Things to consider:
+	// GetItemsMatchingRules(regexmachine.RuleSet) regexmachine.RuleSet
+
 	GetIP() net.IP
 	GetPort() uint16
 	Connect() error
@@ -32,6 +35,8 @@ func GetServerWithType(connectString string, serverType enrichers.ServerType) (S
 	switch serverType {
 	case enrichers.ELK:
 		return enrichers.NewELK(connectString)
+	case enrichers.FTP:
+		return enrichers.NewFTP(connectString)
 	default:
 		return nil, errors.New("unknown server type")
 	}
