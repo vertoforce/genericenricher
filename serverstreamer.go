@@ -12,11 +12,12 @@ import (
 // Server Interface to read data straight from a server
 type Server interface {
 	GetIP() net.IP
-	GetPort() int16
+	GetPort() uint16
 	Connect() error
 	IsConnected() bool
 	Type() enrichers.ServerType
 	io.ReadCloser
+	ResetReader() error // Go back to start of data
 }
 
 // GetServer Given a connection string, attempt to determine server type and return a Server
