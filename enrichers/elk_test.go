@@ -136,7 +136,30 @@ func TestRead(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	if read != sizeOfTestingELK-sizeOfTestingELK/2 {
-		t.Errorf("Did not read ")
+		t.Errorf("Did not read remaining")
+	}
+
+	// See if we can reset and read it all
+	con.Reset()
+
+	// See if we can read in pieces 2
+	// First piece
+	p = make([]byte, sizeOfTestingELK-1)
+	read, err = con.Read(p)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	if read != sizeOfTestingELK-1 {
+		t.Errorf("Did not read fully into buffer")
+	}
+	// Second piece
+	p = make([]byte, 1)
+	read, err = con.Read(p)
+	if err != io.EOF && err != nil {
+		t.Errorf(err.Error())
+	}
+	if read != 1 {
+		t.Errorf("Did not read last byte")
 	}
 
 	// See if we can reset and read it all
