@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"regexmachine"
 	"regexp"
+	"serverstreamer/enrichers/readerhelp"
 	"strconv"
 
 	"github.com/olivere/elastic"
@@ -23,13 +24,10 @@ type ELKClient struct {
 	// Internal
 	client *elastic.Client
 	// Reading stream
-	readCtx          context.Context
-	indices          []ELKIndex
-	curIndex         int                   // Current Index
-	curIndexReader   chan *json.RawMessage // Current Index reader (from GetJSONData)
-	curRawMessage    *json.RawMessage      // Current JSON from index
-	curRawMessagePos int                   // Current position in JSON from index
-	curPPos          int                   // Current position in given buffer
+	readEntries chan []byte
+	readCtx     context.Context
+	readCancel  context.CancelFunc
+	readerState readerhelp.ReaderState // State of reading from readEntries
 }
 
 // ELKIndex ELK Index
@@ -113,85 +111,71 @@ func (client *ELKClient) Type() ServerType {
 
 // Close server
 func (client *ELKClient) Close() error {
-	client.curIndex = -1
+	if client.readCancel != nil {
+		client.readCancel()
+	}
 	client.client.Stop()
 	return nil
 }
 
 // Read Returns all data from all indices on server
 func (client *ELKClient) Read(p []byte) (n int, err error) {
-	// Make sure we are connected
 	if !client.IsConnected() {
-		return 0, errors.New("not connected to server")
+		return 0, errors.New("not connected")
 	}
 
-	// Check what state we are in
-	switch {
-	case client.curIndex == -1:
-		// Get indices and pick first one
-		client.indices, err = client.GetIndices(client.readCtx)
-		if err != nil {
-			return 0, err
-		}
-		client.curIndex = 0
-
-		// Recurs to next step
-		return client.Read(p)
-	case client.curIndexReader == nil:
-		// Check if we finished reading indices
-		if client.curIndex >= len(client.indices) {
-			return 0, io.EOF
-		}
-
-		// Open index for reading
-		client.curIndexReader = client.GetJSONData(client.readCtx, client.indices[client.curIndex].Index, -1)
-
-		// Recurs to next step
-		return client.Read(p)
-	case client.curRawMessage == nil:
-		// Start reading from this index
-		buf, ok := <-client.curIndexReader
-		if !ok {
-			// end of this index, move on
-			client.curIndex++
-			client.curIndexReader = nil
-			return client.Read(p)
-		}
-		client.curRawMessage = buf
-		client.curRawMessagePos = 0
-
-		// Recurs to next step
-		return client.Read(p)
-	default:
-		// Now we have a buf
-
-		// Copy to p and see if we need to copy more
-		copied, needNextSource := readIntoP(p, &client.curPPos, &client.curRawMessagePos, *client.curRawMessage)
-		if needNextSource {
-			// Need to read more data into this p
-
-			// Reset to go to next entry
-			client.curRawMessage = nil
-
-			// Read more data
-			read, err := client.Read(p)
-			return read + copied, err
-		}
-
-		// We are done
-		return copied, nil
+	// If we haven't started reading, start new thread to do so
+	if client.readEntries == nil {
+		client.readCtx, client.readCancel = context.WithCancel(context.Background())
+		client.readEntries = client.getAllData(client.readCtx)
 	}
+
+	return client.readerState.PlaceStream(p, client.readEntries)
 }
 
 // Reset reader back to initial state
 func (client *ELKClient) Reset() {
-	client.readCtx = context.Background()
-	client.indices = nil
-	client.curIndex = -1
-	client.curIndexReader = nil
-	client.curRawMessage = nil
-	client.curRawMessagePos = 0
-	client.curPPos = 0
+	// Cancel out current reading if we are
+	if client.readCtx != nil {
+		client.readCancel()
+	}
+	client.readCtx = nil
+	client.readCancel = nil
+	client.readEntries = nil
+	client.readerState = readerhelp.ReaderState{}
+}
+
+// getAllData Get all entries in all indices
+func (client *ELKClient) getAllData(ctx context.Context) chan []byte {
+	entries := make(chan []byte)
+
+	// Make sure we are connected
+	if !client.IsConnected() {
+		close(entries)
+	}
+
+	go func() {
+		defer close(entries)
+
+		// Go through every index
+		indices, err := client.GetIndices(ctx)
+		if err != nil {
+			return
+		}
+		for _, index := range indices {
+			// For every entry in this index
+			indexEntries := client.GetJSONData(ctx, index.Index, -1)
+			for entry := range indexEntries {
+				select {
+				case entries <- *entry:
+				case <-ctx.Done():
+					return
+				}
+			}
+		}
+	}()
+
+	return entries
 }
 
 // GetIndicesMatchingRules Return all indices that have contents that match a rule in the provided ruleset.
