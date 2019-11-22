@@ -140,9 +140,9 @@ func TestRead(t *testing.T) {
 	}
 
 	// See if we can reset and read it all
-	con.Reset()
+	con.ResetReader()
 
-	// See if we can read in pieces 2
+	// See if we can read in pieces with 1 byte offset
 	// First piece
 	p = make([]byte, sizeOfTestingELK-1)
 	read, err = con.Read(p)
@@ -162,9 +162,16 @@ func TestRead(t *testing.T) {
 		t.Errorf("Did not read last byte")
 	}
 
-	// See if we can reset and read it all
-	con.Reset()
+	// See if we can read a bit and then reset and read it all
+	con.ResetReader()
 
+	p = make([]byte, 1)
+	read, err = con.Read(p)
+	if read != 1 {
+		t.Errorf("Did not read 1 byte")
+	}
+	con.ResetReader()
+	// Read it all
 	p = make([]byte, sizeOfTestingELK)
 	read, err = con.Read(p)
 	if read != sizeOfTestingELK {
