@@ -1,6 +1,7 @@
 package readerhelp
 
 import (
+	"context"
 	"io"
 	"reflect"
 	"testing"
@@ -8,7 +9,7 @@ import (
 
 func TestReadIntoP(t *testing.T) {
 	// Test write that ends buffer and entry, then write to a new buffer
-	state := &ReaderState{}
+	state := New(context.Background())
 	p := make([]byte, 1)
 	p2 := make([]byte, 1)
 	read, needNextSource := state.ReadIntoP(p, []byte{1})
@@ -27,7 +28,7 @@ func TestReadIntoP(t *testing.T) {
 	}
 
 	// Test single write to p with too much source
-	state = &ReaderState{}
+	state = New(context.Background())
 	p = make([]byte, 3)
 	read, needNextSource = state.ReadIntoP(p, []byte{1, 2, 3, 4, 5})
 	if read != 3 || needNextSource != false {
@@ -38,7 +39,7 @@ func TestReadIntoP(t *testing.T) {
 	}
 
 	// Test single write to p with too little source
-	state = &ReaderState{}
+	state = New(context.Background())
 	p = make([]byte, 5)
 	read, needNextSource = state.ReadIntoP(p, []byte{1, 2, 3})
 	if read != 3 || needNextSource != true {
@@ -49,7 +50,7 @@ func TestReadIntoP(t *testing.T) {
 	}
 
 	// Test two writes to p
-	state = &ReaderState{}
+	state = New(context.Background())
 	p = make([]byte, 10)
 	read, needNextSource = state.ReadIntoP(p, []byte{1, 2, 3, 4, 5})
 	if read != 5 || needNextSource != true {
@@ -64,7 +65,7 @@ func TestReadIntoP(t *testing.T) {
 	}
 
 	// Test three writes to p
-	state = &ReaderState{}
+	state = New(context.Background())
 	p = make([]byte, 10)
 	state.ReadIntoP(p, []byte{1, 2})
 	state.ReadIntoP(p, []byte{1, 2, 3})
@@ -91,10 +92,24 @@ func TestPlaceStream(t *testing.T) {
 		}
 	}()
 
+	// Test basic functions
+	state := New(context.Background())
+	if state.IsActive() != true {
+		t.Errorf("ReaderState should be active")
+	}
+	state.Stop()
+	if err := state.ReadCtx.Err(); err == nil || err.Error() != context.Canceled.Error() {
+		t.Errorf("Did not cancel successfully")
+	}
+	if state.IsActive() != false {
+		t.Errorf("ReaderState should not be active")
+	}
+
 	// Test populating within same buffer
-	state := &ReaderState{}
+	state = New(context.Background())
+	state.SetEntries(entries)
 	p := make([]byte, 9)
-	read, err := state.PlaceStream(p, entries)
+	read, err := state.Read(p)
 	if read != 9 || err != nil {
 		t.Errorf("Incorrect return values")
 	}
@@ -103,17 +118,18 @@ func TestPlaceStream(t *testing.T) {
 	}
 
 	// Test populating within the same entry
-	state = &ReaderState{}
+	state = New(context.Background())
+	state.SetEntries(entries)
 	ps := [][]byte{make([]byte, 3), make([]byte, 3), make([]byte, 3)}
-	read, err = state.PlaceStream(ps[0], entries)
+	read, err = state.Read(ps[0])
 	if read != 3 || err != nil {
 		t.Errorf("Incorrect return values")
 	}
-	read, err = state.PlaceStream(ps[1], entries)
+	read, err = state.Read(ps[1])
 	if read != 3 || err != nil {
 		t.Errorf("Incorrect return values")
 	}
-	read, err = state.PlaceStream(ps[2], entries)
+	read, err = state.Read(ps[2])
 	if read != 3 || err != nil {
 		t.Errorf("Incorrect return values")
 	}
@@ -122,10 +138,11 @@ func TestPlaceStream(t *testing.T) {
 	}
 
 	// Test populating three times
-	state = &ReaderState{}
+	state = New(context.Background())
+	state.SetEntries(entries)
 	for i := 0; i < 3; i++ {
 		p := make([]byte, 3)
-		read, err = state.PlaceStream(p, entries)
+		read, err = state.Read(p)
 		if read != 3 || err != nil {
 			t.Errorf("Incorrect return values")
 		}
@@ -136,8 +153,9 @@ func TestPlaceStream(t *testing.T) {
 
 	// Test reading to EOF
 	p = make([]byte, 3)
-	state = &ReaderState{}
-	read, err = state.PlaceStream(p, entries)
+	state = New(context.Background())
+	state.SetEntries(entries)
+	read, err = state.Read(p)
 	if read != 0 {
 		t.Errorf("Should have read 0")
 	}

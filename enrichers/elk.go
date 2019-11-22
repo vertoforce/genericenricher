@@ -24,10 +24,7 @@ type ELKClient struct {
 	// Internal
 	client *elastic.Client
 	// Reading stream
-	readEntries chan []byte
-	readCtx     context.Context
-	readCancel  context.CancelFunc
-	readerState readerhelp.ReaderState // State of reading from readEntries
+	readerState *readerhelp.ReaderState // State of reading from readEntries
 }
 
 // ELKIndex ELK Index
@@ -72,10 +69,16 @@ func NewELK(urlString string) (*ELKClient, error) {
 	}
 	client.IP = net.ParseIP(addrs[0])
 
-	// Set internals
-	client.Reset()
+	// Connect
+	err = client.Connect()
+	if err != nil {
+		return nil, err
+	}
 
-	return &client, client.Connect()
+	// Set up reader
+	client.ResetReader()
+
+	return &client, nil
 }
 
 // Connect to ELK server
@@ -111,9 +114,11 @@ func (client *ELKClient) Type() ServerType {
 
 // Close server
 func (client *ELKClient) Close() error {
-	if client.readCancel != nil {
-		client.readCancel()
+	// Stop current reader
+	if client.readerState != nil {
+		client.readerState.Stop()
 	}
+
 	client.client.Stop()
 	return nil
 }
@@ -124,25 +129,20 @@ func (client *ELKClient) Read(p []byte) (n int, err error) {
 		return 0, errors.New("not connected")
 	}
 
-	// If we haven't started reading, start new thread to do so
-	if client.readEntries == nil {
-		client.readCtx, client.readCancel = context.WithCancel(context.Background())
-		client.readEntries = client.getAllData(client.readCtx)
-	}
-
-	return client.readerState.PlaceStream(p, client.readEntries)
+	return client.readerState.Read(p)
 }
 
-// Reset reader back to initial state
-func (client *ELKClient) Reset() {
-	// Cancel out current reading if we are
-	if client.readCtx != nil {
-		client.readCancel()
+// ResetReader reader back to initial state
+func (client *ELKClient) ResetReader() {
+	// Stop current reader
+	if client.readerState != nil {
+		client.readerState.Stop()
 	}
-	client.readCtx = nil
-	client.readCancel = nil
-	client.readEntries = nil
-	client.readerState = readerhelp.ReaderState{}
+
+	// Start new reader
+	client.readerState = readerhelp.New(context.Background())
+	entries := client.getAllData(client.readerState.ReadCtx)
+	client.readerState.SetEntries(entries)
 }
 
 // getAllData Get all entries in all indices
