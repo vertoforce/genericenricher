@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func checkServerFunctionality(s Server, ip net.IP, port int16) error {
+func checkServerFunctionality(s Server, ip net.IP, port uint16) error {
 	// Check IP and Port
 	if !s.GetIP().Equal(ip) {
 		return errors.New("bad ip")
@@ -52,7 +52,7 @@ func TestGetServerWithType(t *testing.T) {
 		url        string
 		serverType enrichers.ServerType
 		ip         net.IP
-		port       int16
+		port       uint16
 	}{
 		// Local ELK
 		{"http://localhost:9200", enrichers.ELK, net.IPv6loopback, 9200},

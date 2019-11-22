@@ -17,14 +17,9 @@ import (
 
 // ELKClient ELK Connection
 type ELKClient struct {
-	IP   net.IP
-	Port int16
-	URL  string
-
-	// Internal
-	client *elastic.Client
-	// Reading stream
-	readerState *readerhelp.ReaderState // State of reading from readEntries
+	url         *url.URL
+	client      *elastic.Client
+	readerState *readerhelp.ReaderState
 }
 
 // ELKIndex ELK Index
@@ -46,28 +41,11 @@ type ELKIndex struct {
 func NewELK(urlString string) (*ELKClient, error) {
 	client := ELKClient{}
 	// Set URL
-	client.URL = urlString
-	urlObj, err := url.Parse(urlString)
+	url, err := url.Parse(urlString)
 	if err != nil {
 		return nil, err
 	}
-
-	// Set Port
-	port, err := strconv.ParseInt(urlObj.Port(), 10, 16)
-	if err != nil {
-		return nil, err
-	}
-	client.Port = int16(port)
-
-	// Set IP
-	addrs, err := net.LookupHost(urlObj.Hostname())
-	if err != nil {
-		return nil, err
-	}
-	if len(addrs) == 0 {
-		return nil, errors.New("Invalid hostname")
-	}
-	client.IP = net.ParseIP(addrs[0])
+	client.url = url
 
 	// Connect
 	err = client.Connect()
@@ -84,7 +62,7 @@ func NewELK(urlString string) (*ELKClient, error) {
 // Connect to ELK server
 func (client *ELKClient) Connect() error {
 	var err error
-	client.client, err = elastic.NewSimpleClient(elastic.SetURL(client.URL))
+	client.client, err = elastic.NewSimpleClient(elastic.SetURL(client.url.String()))
 	if err != nil {
 		return err
 	}
@@ -94,12 +72,20 @@ func (client *ELKClient) Connect() error {
 
 // GetIP Get IP of server
 func (client *ELKClient) GetIP() net.IP {
-	return client.IP
+	addrs, err := net.LookupHost(client.url.Hostname())
+	if err != nil || len(addrs) == 0 {
+		return net.IP{}
+	}
+	return net.ParseIP(addrs[0])
 }
 
 // GetPort Get Port of server
-func (client *ELKClient) GetPort() int16 {
-	return client.Port
+func (client *ELKClient) GetPort() uint16 {
+	port, err := strconv.ParseInt(client.url.Port(), 10, 16)
+	if err != nil {
+		return 0
+	}
+	return uint16(port)
 }
 
 // IsConnected Is server connected
@@ -133,7 +119,7 @@ func (client *ELKClient) Read(p []byte) (n int, err error) {
 }
 
 // ResetReader reader back to initial state
-func (client *ELKClient) ResetReader() {
+func (client *ELKClient) ResetReader() error {
 	// Stop current reader
 	if client.readerState != nil {
 		client.readerState.Stop()
@@ -143,6 +129,8 @@ func (client *ELKClient) ResetReader() {
 	client.readerState = readerhelp.New(context.Background())
 	entries := client.getAllData(client.readerState.ReadCtx)
 	client.readerState.SetEntries(entries)
+
+	return nil
 }
 
 // getAllData Get all entries in all indices
