@@ -1,6 +1,9 @@
 package enrichers
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 func ExampleNewELK() {
 	_, err := NewELK("http://127.0.0.1:9200")
@@ -15,7 +18,7 @@ func ExampleELKClient_GetIndices() {
 		panic(err)
 	}
 
-	indices, err := con.GetIndices()
+	indices, err := con.GetIndices(context.Background())
 	if err != nil {
 		panic(err)
 	}
