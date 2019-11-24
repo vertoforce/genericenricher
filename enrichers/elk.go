@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/vertoforce/genericenricher/enrichers/readerhelp"
 	"io"
 	"net"
 	"net/url"
 	"regexmachine"
 	"regexp"
-	"serverstreamer/enrichers/readerhelp"
 	"strconv"
 
 	"github.com/olivere/elastic"
