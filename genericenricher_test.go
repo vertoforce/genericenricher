@@ -1,11 +1,12 @@
-package serverstreamer
+package genericenricher
 
 import (
 	"errors"
 	"io"
 	"net"
-	"serverstreamer/enrichers"
 	"testing"
+
+	"github.com/vertoforce/genericenricher/enrichers"
 )
 
 func TestGetServerWithType(t *testing.T) {

@@ -1,8 +1,9 @@
-package serverstreamer
+package genericenricher
 
 import (
 	"fmt"
-	"serverstreamer/enrichers"
+
+	"github.com/vertoforce/genericenricher/enrichers"
 )
 
 func ExampleGetServerWithType() {

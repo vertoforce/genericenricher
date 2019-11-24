@@ -1,4 +1,4 @@
-module serverstreamer
+module github.com/vertoforce/genericenricher
 
 go 1.12
 

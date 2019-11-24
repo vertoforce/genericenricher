@@ -1,4 +1,4 @@
-package serverstreamer
+package genericenricher
 
 func Example() {
 	server, err := GetServer("http://localhost:9200")

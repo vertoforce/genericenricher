@@ -3,6 +3,7 @@ package enrichers
 import (
 	"context"
 	"errors"
+	"github.com/vertoforce/genericenricher/enrichers/readerhelp"
 	"io"
 	"io/ioutil"
 	"net"
@@ -10,7 +11,6 @@ import (
 	"path"
 	"regexmachine"
 	"regexp"
-	"serverstreamer/enrichers/readerhelp"
 	"strconv"
 	"time"
 
