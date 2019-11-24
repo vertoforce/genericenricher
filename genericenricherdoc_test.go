@@ -12,11 +12,6 @@ func ExampleGetServerWithType() {
 		return
 	}
 
-	err = server.Connect()
-	if err != nil {
-		return
-	}
-
 	p := make([]byte, 10)
 	read, err := server.Read(p)
 	if err != nil {
