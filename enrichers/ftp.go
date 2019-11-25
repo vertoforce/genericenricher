@@ -103,7 +103,10 @@ func (client *FTPClient) Close() error {
 	// Stop current reader
 	if client.reader != nil {
 		client.readerCancel()
-		client.reader.Close()
+		err := client.reader.Close()
+		if err != nil {
+			return err
+		}
 	}
 
 	return client.client.Quit()
@@ -122,7 +125,10 @@ func (client *FTPClient) ResetReader() error {
 	// Stop current reader
 	if client.reader != nil {
 		client.readerCancel()
-		client.reader.Close()
+		err := client.reader.Close()
+		if err != nil {
+			return err
+		}
 	}
 
 	// Start new reader
