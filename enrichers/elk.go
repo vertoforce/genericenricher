@@ -9,18 +9,17 @@ import (
 	"net/url"
 	"regexmachine"
 	"regexp"
-	"strconv"
-
-	"github.com/vertoforce/genericenricher/enrichers/readerhelp"
 
 	"github.com/olivere/elastic"
 )
 
 // ELKClient ELK Connection
 type ELKClient struct {
-	url    *url.URL
-	client *elastic.Client
-	reader io.ReadCloser
+	url          *url.URL
+	client       *elastic.Client
+	reader       io.ReadCloser
+	readerCtx    context.Context
+	readerCancel context.CancelFunc
 }
 
 // ELKIndex ELK Index
@@ -56,9 +55,6 @@ func NewELK(urlString string) (*ELKClient, error) {
 
 	// TODO: Check for user/pass
 
-	// Set up reader
-	client.ResetReader()
-
 	return &client, nil
 }
 
@@ -75,20 +71,12 @@ func (client *ELKClient) Connect() error {
 
 // GetIP Get IP of server
 func (client *ELKClient) GetIP() net.IP {
-	addrs, err := net.LookupHost(client.url.Hostname())
-	if err != nil || len(addrs) == 0 {
-		return net.IP{}
-	}
-	return net.ParseIP(addrs[0])
+	return urlToIP(client.url)
 }
 
 // GetPort Get Port of server
 func (client *ELKClient) GetPort() uint16 {
-	port, err := strconv.ParseInt(client.url.Port(), 10, 16)
-	if err != nil {
-		return 0
-	}
-	return uint16(port)
+	return urlToPort(client.url)
 }
 
 // IsConnected Is server connected
@@ -105,6 +93,7 @@ func (client *ELKClient) Type() ServerType {
 func (client *ELKClient) Close() error {
 	// Stop current reader
 	if client.reader != nil {
+		client.readerCancel()
 		client.reader.Close()
 	}
 
@@ -117,22 +106,32 @@ func (client *ELKClient) Read(p []byte) (n int, err error) {
 	if !client.IsConnected() {
 		return 0, errors.New("not connected")
 	}
+	if client.reader == nil {
+		err = client.ResetReader()
+		if err != nil {
+			return 0, err
+		}
+	}
 
 	return client.reader.Read(p)
 }
 
-// ResetReader reader back to initial state
+// ResetReader reset reader back to initial state
 func (client *ELKClient) ResetReader() error {
 	// Stop current reader
 	if client.reader != nil {
+		client.readerCancel()
 		client.reader.Close()
 	}
 
 	// Start new reader
-	client.reader = client.getAllData(context.Background())
+	client.readerCtx, client.readerCancel = context.WithCancel(context.Background())
+	client.reader = client.getAllData(client.readerCtx)
 
 	return nil
 }
+
+// -- ELK specific functions --
 
 // getAllData Get all entries in all indices
 func (client *ELKClient) getAllData(ctx context.Context) io.ReadCloser {
@@ -220,7 +219,7 @@ func (client *ELKClient) GetIndices(ctx context.Context) ([]ELKIndex, error) {
 			index.DocsDeleted,
 			index.CreationDate,
 			index.CreationDateString,
-			StringSizeToUint(index.StoreSize),
+			stringSizeToUint(index.StoreSize),
 		})
 	}
 

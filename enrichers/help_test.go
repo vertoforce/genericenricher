@@ -36,7 +36,7 @@ func TestStringSizeToInt(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		if got := StringSizeToUint(test.input); got != test.output {
+		if got := stringSizeToUint(test.input); got != test.output {
 			t.Errorf("Test %d failed, wanted %d got %d", i, test.output, got)
 		}
 	}

@@ -10,7 +10,6 @@ import (
 	"path"
 	"regexmachine"
 	"regexp"
-	"strconv"
 	"time"
 
 	"github.com/jlaffaye/ftp"
@@ -22,11 +21,13 @@ const (
 
 // FTPClient abstracted FTP client
 type FTPClient struct {
-	username string
-	password string
-	url      *url.URL
-	client   *ftp.ServerConn
-	reader   io.ReadCloser
+	username     string
+	password     string
+	url          *url.URL
+	client       *ftp.ServerConn
+	reader       io.ReadCloser
+	readerCtx    context.Context
+	readerCancel context.CancelFunc
 }
 
 // NewFTP Connect to FTP server with provided credentials
@@ -75,20 +76,12 @@ func (client *FTPClient) Connect() error {
 
 // GetIP Get IP of server
 func (client *FTPClient) GetIP() net.IP {
-	addrs, err := net.LookupHost(client.url.Hostname())
-	if err != nil || len(addrs) == 0 {
-		return net.IP{}
-	}
-	return net.ParseIP(addrs[0])
+	return urlToIP(client.url)
 }
 
 // GetPort Get Port of server
 func (client *FTPClient) GetPort() uint16 {
-	port, err := strconv.ParseInt(client.url.Port(), 10, 16)
-	if err != nil {
-		return 0
-	}
-	return uint16(port)
+	return urlToPort(client.url)
 }
 
 // IsConnected Is server connected
@@ -109,6 +102,7 @@ func (client *FTPClient) Type() ServerType {
 func (client *FTPClient) Close() error {
 	// Stop current reader
 	if client.reader != nil {
+		client.readerCancel()
 		client.reader.Close()
 	}
 
@@ -127,11 +121,13 @@ func (client *FTPClient) Read(p []byte) (n int, err error) {
 func (client *FTPClient) ResetReader() error {
 	// Stop current reader
 	if client.reader != nil {
+		client.readerCancel()
 		client.reader.Close()
 	}
 
 	// Start new reader
-	client.reader = client.getAllData(context.Background())
+	client.readerCtx, client.readerCancel = context.WithCancel(context.Background())
+	client.reader = client.getAllData(client.readerCtx)
 
 	return nil
 }
