@@ -6,6 +6,7 @@ import (
 	"io"
 	"regexmachine"
 	"testing"
+	"time"
 )
 
 var (
@@ -29,6 +30,21 @@ func TestGetFiles(t *testing.T) {
 	if fileCount == 0 {
 		t.Errorf("No files found")
 	}
+
+	// Check if cancel works
+	ctx, cancel := context.WithCancel(context.Background())
+	files, err = client.GetAllFilesInFolder(ctx, ".")
+	fileCount = 0
+	for range files {
+		fileCount++
+		cancel()
+		time.Sleep(time.Millisecond * 10) // Wait for cancel to go through
+
+		if fileCount > 1 {
+			t.Errorf("Too many files, cancel did not work")
+		}
+	}
+	cancel()
 }
 
 func TestReadFTP(t *testing.T) {
