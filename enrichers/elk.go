@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/vertoforce/genericenricher/enrichers/readerhelp"
+
 	"github.com/olivere/elastic"
 )
 
