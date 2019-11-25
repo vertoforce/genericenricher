@@ -13,8 +13,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/vertoforce/genericenricher/enrichers/readerhelp"
-
 	"github.com/jlaffaye/ftp"
 )
 
@@ -24,11 +22,11 @@ const (
 
 // FTPClient abstracted FTP client
 type FTPClient struct {
-	username    string
-	password    string
-	url         *url.URL
-	client      *ftp.ServerConn
-	readerState *readerhelp.ReaderState
+	username string
+	password string
+	url      *url.URL
+	client   *ftp.ServerConn
+	reader   io.ReadCloser
 }
 
 // NewFTP Connect to FTP server with provided credentials
@@ -49,7 +47,7 @@ func NewFTP(urlString string) (*FTPClient, error) {
 		}
 	}
 
-	// Connect
+	// Attempt connection
 	err = client.Connect()
 	if err != nil {
 		return nil, err
@@ -110,49 +108,47 @@ func (client *FTPClient) Type() ServerType {
 // Close connection
 func (client *FTPClient) Close() error {
 	// Stop current reader
-	if client.readerState != nil {
-		client.readerState.Stop()
+	if client.reader != nil {
+		client.reader.Close()
 	}
 
 	return client.client.Quit()
 }
 
 func (client *FTPClient) Read(p []byte) (n int, err error) {
-	if client.readerState == nil {
+	if client.reader == nil {
 		client.ResetReader()
 	}
 
-	return client.readerState.Read(p)
+	return client.reader.Read(p)
 }
 
 // ResetReader reader back to initial state
 func (client *FTPClient) ResetReader() error {
 	// Stop current reader
-	if client.readerState != nil {
-		client.readerState.Stop()
+	if client.reader != nil {
+		client.reader.Close()
 	}
 
 	// Start new reader
-	client.readerState = readerhelp.New(context.Background())
-	entries := client.getAllData(client.readerState.ReadCtx)
-	client.readerState.SetEntries(entries)
+	client.reader = client.getAllData(context.Background())
 
 	return nil
 }
 
-// getAllData Reads all files on server.  Opens a new connection
-func (client *FTPClient) getAllData(ctx context.Context) chan []byte {
-	fileDatas := make(chan []byte)
+// getAllData Reads all files on server.  Open a new connection
+func (client *FTPClient) getAllData(ctx context.Context) io.ReadCloser {
+	fileDataReader, fileDataWriter := io.Pipe()
 
 	// Make new connection as to not overlap with the master connection
 	ourClient, err := NewFTP(client.url.String())
 	if err != nil {
-		close(fileDatas)
-		return fileDatas
+		fileDataWriter.Close()
+		return fileDataReader
 	}
 
 	go func() {
-		defer close(fileDatas)
+		defer fileDataWriter.Close()
 		defer ourClient.Close()
 
 		files, err := ourClient.GetAllFilesInFolder(ctx, ".")
@@ -165,23 +161,16 @@ func (client *FTPClient) getAllData(ctx context.Context) chan []byte {
 			if err != nil {
 				continue
 			}
-			// Read to []byte
-			// TODO: Use reader?
-			fileData, err := ioutil.ReadAll(fileResp)
-			fileResp.Close()
-			if err != nil {
-				continue
-			}
 
-			select {
-			case fileDatas <- fileData:
-			case <-ctx.Done():
-				return
-			}
+			// TODO: Cancel with context
+			// Ignoring error currently
+			io.Copy(fileDataWriter, fileResp)
+			fileResp.Close()
 		}
+		fileDataWriter.Close()
 	}()
 
-	return fileDatas
+	return fileDataReader
 }
 
 // GetAllFilesInFolder Get all file paths in FTP folder

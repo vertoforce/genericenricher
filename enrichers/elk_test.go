@@ -6,6 +6,7 @@ import (
 	"io"
 	"regexmachine"
 	"testing"
+	"time"
 )
 
 func TestNewElK(t *testing.T) {
@@ -16,8 +17,8 @@ func TestNewElK(t *testing.T) {
 	}
 
 	// Check IP and Port
-	fmt.Println(con.GetIP())
 	if con.GetIP().String() != "127.0.0.1" {
+		fmt.Println(con.GetIP())
 		t.Errorf("Incorrect IP")
 	}
 	if con.GetPort() != 9200 {
@@ -56,13 +57,13 @@ func TestGetIndices(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to get indices")
 	}
-	// Print the indices we matched
-	for _, relevantIndex := range matchedIndices {
-		fmt.Println(relevantIndex)
-	}
 
 	// Make sure we matches all indices
 	if len(indices) != len(matchedIndices) {
+		// Print the indices we matched
+		for _, relevantIndex := range matchedIndices {
+			fmt.Println(relevantIndex)
+		}
 		t.Errorf("Did not match all indices")
 	}
 }
@@ -122,6 +123,8 @@ func TestRead(t *testing.T) {
 		return
 	}
 
+	// TODO: Compute actual size of ELK
+
 	// See if we can read in pieces
 	// First piece
 	p := make([]byte, sizeOfTestingELK/2)
@@ -139,7 +142,7 @@ func TestRead(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	if read != sizeOfTestingELK-sizeOfTestingELK/2 {
-		t.Errorf("Did not read remaining")
+		t.Errorf("Did not read correct remaining amount, is your `sizeOfTestingELK` correct?")
 	}
 
 	// See if we can reset and read it all
@@ -178,9 +181,9 @@ func TestRead(t *testing.T) {
 	p = make([]byte, sizeOfTestingELK)
 	read, err = con.Read(p)
 	if read != sizeOfTestingELK {
+		fmt.Println(string(p))
 		t.Errorf("Did not read entire index")
 	}
-	fmt.Println(string(p))
 }
 
 func TestReadLarge(t *testing.T) {
@@ -192,7 +195,10 @@ func TestReadLarge(t *testing.T) {
 
 	p := make([]byte, 1024*1024)
 	read, err := con.Read(p)
-	fmt.Printf("Read %d bytes with error %v\n", read, err)
+	if read == 0 {
+		t.Errorf("Read %d bytes with error %v\n", read, err)
+
+	}
 
 	// Save to file
 	// ioutil.WriteFile("out.txt", p[0:read], 0755)
