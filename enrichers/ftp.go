@@ -3,7 +3,6 @@ package enrichers
 import (
 	"context"
 	"errors"
-	"github.com/vertoforce/genericenricher/enrichers/readerhelp"
 	"io"
 	"io/ioutil"
 	"net"
@@ -13,6 +12,8 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/vertoforce/genericenricher/enrichers/readerhelp"
 
 	"github.com/jlaffaye/ftp"
 )
@@ -53,8 +54,6 @@ func NewFTP(urlString string) (*FTPClient, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	client.ResetReader()
 
 	return client, nil
 }
@@ -119,6 +118,10 @@ func (client *FTPClient) Close() error {
 }
 
 func (client *FTPClient) Read(p []byte) (n int, err error) {
+	if client.readerState == nil {
+		client.ResetReader()
+	}
+
 	return client.readerState.Read(p)
 }
 
@@ -137,25 +140,28 @@ func (client *FTPClient) ResetReader() error {
 	return nil
 }
 
-// getAllData Reads all files on server
+// getAllData Reads all files on server.  Opens a new connection
 func (client *FTPClient) getAllData(ctx context.Context) chan []byte {
 	fileDatas := make(chan []byte)
 
-	// Make sure we are connected
-	if !client.IsConnected() {
+	// Make new connection as to not overlap with the master connection
+	ourClient, err := NewFTP(client.url.String())
+	if err != nil {
 		close(fileDatas)
 		return fileDatas
 	}
 
 	go func() {
 		defer close(fileDatas)
-		files, err := client.GetAllFilesInFolder(ctx, ".")
+		defer ourClient.Close()
+
+		files, err := ourClient.GetAllFilesInFolder(ctx, ".")
 		if err != nil {
 			return
 		}
 
 		for file := range files {
-			fileResp, err := client.client.Retr(file)
+			fileResp, err := ourClient.client.Retr(file)
 			if err != nil {
 				continue
 			}
