@@ -3,6 +3,8 @@ module github.com/vertoforce/genericenricher
 go 1.12
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.3.3 // indirect
+	github.com/JamesStewy/go-mysqldump v0.2.2
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/google/go-cmp v0.3.1 // indirect

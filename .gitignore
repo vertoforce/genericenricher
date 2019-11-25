@@ -3,3 +3,5 @@ elasticsearch-data
 # FTP
 ftpdata
 passwd
+# MySQL
+mysql-data
