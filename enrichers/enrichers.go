@@ -9,6 +9,7 @@ const (
 	ELK
 	FTP
 	SSH
+	SQL
 )
 
 // DetectServerType Get type of server by looking at URL and/or poking at server
