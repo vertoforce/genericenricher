@@ -3,7 +3,6 @@ package enrichers
 import (
 	"context"
 	"fmt"
-	"io"
 	"regexmachine"
 	"testing"
 	"time"
@@ -68,16 +67,18 @@ func TestGetIndices(t *testing.T) {
 	}
 }
 
-// Testing index with more than 1 entry
-var testingIndex = ".kibana"
-var sizeOfTestingELK = 162
-
 func TestGetData(t *testing.T) {
 	con, err := NewELK("http://127.0.0.1:9200")
 	if err != nil {
 		t.Errorf("failed to connect")
 		return
 	}
+
+	indices, err := con.GetIndices(context.Background())
+	if len(indices) == 0 || err != nil {
+		t.Errorf("No indices to test on")
+	}
+	testingIndex := indices[0].Index
 
 	// Check to make sure the limit works
 	ctx, cancel := context.WithCancel(context.Background())
@@ -116,6 +117,20 @@ func TestGetData(t *testing.T) {
 	}
 }
 
+func TestGetTotalSize(t *testing.T) {
+	con, err := NewELK("http://127.0.0.1:9200")
+	if err != nil {
+		t.Errorf("failed to connect")
+		return
+	}
+
+	_, err = con.GetTotalSize(context.Background())
+	if err != nil {
+		t.Errorf("Error getting size: " + err.Error())
+		return
+	}
+}
+
 func TestRead(t *testing.T) {
 	con, err := NewELK("http://127.0.0.1:9200")
 	if err != nil {
@@ -123,66 +138,19 @@ func TestRead(t *testing.T) {
 		return
 	}
 
-	// TODO: Compute actual size of ELK
-
-	// See if we can read in pieces
-	// First piece
-	p := make([]byte, sizeOfTestingELK/2)
+	// Check if we can read some data
+	p := make([]byte, 1024)
 	read, err := con.Read(p)
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	if read != sizeOfTestingELK/2 {
-		t.Errorf("Did not read fully into buffer")
-	}
-	// Second piece
-	p = make([]byte, sizeOfTestingELK)
-	read, err = con.Read(p)
-	if err != io.EOF && err != nil {
-		t.Errorf(err.Error())
-	}
-	if read != sizeOfTestingELK-sizeOfTestingELK/2 {
-		t.Errorf("Did not read correct remaining amount, is your `sizeOfTestingELK` correct?")
+	if read == 0 {
+		t.Errorf("Did not read anything")
 	}
 
-	// See if we can reset and read it all
+	// Reset and read
 	con.ResetReader()
-
-	// See if we can read in pieces with 1 byte offset
-	// First piece
-	p = make([]byte, sizeOfTestingELK-1)
+	p = make([]byte, 1024)
 	read, err = con.Read(p)
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	if read != sizeOfTestingELK-1 {
-		t.Errorf("Did not read fully into buffer")
-	}
-	// Second piece
-	p = make([]byte, 1)
-	read, err = con.Read(p)
-	if err != io.EOF && err != nil {
-		t.Errorf(err.Error())
-	}
-	if read != 1 {
-		t.Errorf("Did not read last byte")
-	}
-
-	// See if we can read a bit and then reset and read it all
-	con.ResetReader()
-
-	p = make([]byte, 1)
-	read, err = con.Read(p)
-	if read != 1 {
-		t.Errorf("Did not read 1 byte")
-	}
-	con.ResetReader()
-	// Read it all
-	p = make([]byte, sizeOfTestingELK)
-	read, err = con.Read(p)
-	if read != sizeOfTestingELK {
-		fmt.Println(string(p))
-		t.Errorf("Did not read entire index")
+	if read == 0 {
+		t.Errorf("Did not read anything")
 	}
 }
 

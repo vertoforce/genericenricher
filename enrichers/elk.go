@@ -225,6 +225,21 @@ func (client *ELKClient) GetIndices(ctx context.Context) ([]ELKIndex, error) {
 	return ret, nil
 }
 
+// GetTotalSize Gets total size of the ELK instance in bytes by summing all the sizes of each index
+func (client *ELKClient) GetTotalSize(ctx context.Context) (uint64, error) {
+	indices, err := client.GetIndices(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	totalSize := uint64(0)
+	for _, index := range indices {
+		totalSize += index.StoreSize
+	}
+
+	return totalSize, nil
+}
+
 // GetJSONData Given index name, return channel of jsons limited to `limit` hits. -1 for unlimited
 func (client *ELKClient) GetJSONData(ctx context.Context, indexName string, limit int64) chan *json.RawMessage {
 	ret := make(chan *json.RawMessage)
