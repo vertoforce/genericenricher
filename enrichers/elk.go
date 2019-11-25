@@ -94,7 +94,10 @@ func (client *ELKClient) Close() error {
 	// Stop current reader
 	if client.reader != nil {
 		client.readerCancel()
-		client.reader.Close()
+		err := client.reader.Close()
+		if err != nil {
+			return err
+		}
 	}
 
 	client.client.Stop()
@@ -121,7 +124,10 @@ func (client *ELKClient) ResetReader() error {
 	// Stop current reader
 	if client.reader != nil {
 		client.readerCancel()
-		client.reader.Close()
+		err := client.reader.Close()
+		if err != nil {
+			return err
+		}
 	}
 
 	// Start new reader

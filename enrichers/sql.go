@@ -59,6 +59,7 @@ func (client *SQLClient) Connect() error {
 
 // GetIP Get IP of SQL server
 func (client *SQLClient) GetIP() net.IP {
+	// TODO: Fix this
 	return urlToIP(client.url)
 }
 
@@ -78,14 +79,17 @@ func (client *SQLClient) Type() ServerType {
 }
 
 // Close the connection
-func (client *SQLClient) Close() {
+func (client *SQLClient) Close() error {
 	// Stop current reader
 	if client.reader != nil {
 		client.readerCancel()
-		client.reader.Close()
+		err := client.reader.Close()
+		if err != nil {
+			return err
+		}
 	}
 
-	client.db.Close()
+	return client.db.Close()
 }
 
 func (client *SQLClient) Read(p []byte) (n int, err error) {
@@ -97,7 +101,10 @@ func (client *SQLClient) ResetReader() error {
 	// Stop current reader
 	if client.reader != nil {
 		client.readerCancel()
-		client.reader.Close()
+		err := client.reader.Close()
+		if err != nil {
+			return err
+		}
 	}
 
 	// Start new reader
@@ -128,6 +135,7 @@ func (client *SQLClient) Dump(ctx context.Context) (io.ReadCloser, error) {
 			for row := range rows {
 				// For every column
 				for _, col := range row {
+					// TODO: Cancel with context
 					dumpWriter.Write(col)
 				}
 			}
