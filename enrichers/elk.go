@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/vertoforce/genericenricher/enrichers/readerhelp"
 	"io"
 	"net"
 	"net/url"
@@ -17,9 +16,9 @@ import (
 
 // ELKClient ELK Connection
 type ELKClient struct {
-	url         *url.URL
-	client      *elastic.Client
-	readerState *readerhelp.ReaderState
+	url    *url.URL
+	client *elastic.Client
+	reader io.ReadCloser
 }
 
 // ELKIndex ELK Index
@@ -103,8 +102,8 @@ func (client *ELKClient) Type() ServerType {
 // Close server
 func (client *ELKClient) Close() error {
 	// Stop current reader
-	if client.readerState != nil {
-		client.readerState.Stop()
+	if client.reader != nil {
+		client.reader.Close()
 	}
 
 	client.client.Stop()
@@ -117,36 +116,34 @@ func (client *ELKClient) Read(p []byte) (n int, err error) {
 		return 0, errors.New("not connected")
 	}
 
-	return client.readerState.Read(p)
+	return client.reader.Read(p)
 }
 
 // ResetReader reader back to initial state
 func (client *ELKClient) ResetReader() error {
 	// Stop current reader
-	if client.readerState != nil {
-		client.readerState.Stop()
+	if client.reader != nil {
+		client.reader.Close()
 	}
 
 	// Start new reader
-	client.readerState = readerhelp.New(context.Background())
-	entries := client.getAllData(client.readerState.ReadCtx)
-	client.readerState.SetEntries(entries)
+	client.reader = client.getAllData(context.Background())
 
 	return nil
 }
 
 // getAllData Get all entries in all indices
-func (client *ELKClient) getAllData(ctx context.Context) chan []byte {
-	entries := make(chan []byte)
+func (client *ELKClient) getAllData(ctx context.Context) io.ReadCloser {
+	allDataReader, allDataWriter := io.Pipe()
 
 	// Make sure we are connected
 	if !client.IsConnected() {
-		close(entries)
-		return entries
+		allDataWriter.Close()
+		return allDataReader
 	}
 
 	go func() {
-		defer close(entries)
+		defer allDataWriter.Close()
 
 		// Go through every index
 		indices, err := client.GetIndices(ctx)
@@ -157,16 +154,14 @@ func (client *ELKClient) getAllData(ctx context.Context) chan []byte {
 			// For every entry in this index
 			indexEntries := client.GetJSONData(ctx, index.Index, -1)
 			for entry := range indexEntries {
-				select {
-				case entries <- *entry:
-				case <-ctx.Done():
-					return
-				}
+				// TODO: Cancel with context
+				allDataWriter.Write(*entry)
 			}
 		}
+		allDataWriter.Close()
 	}()
 
-	return entries
+	return allDataReader
 }
 
 // GetIndicesMatchingRules Return all indices that have contents that match a rule in the provided ruleset.
