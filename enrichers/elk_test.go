@@ -79,7 +79,7 @@ func TestGetData(t *testing.T) {
 	}
 
 	// Check to make sure the limit works
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
 	dataStream := con.GetData(ctx, testingIndex, 1)
 
 	totalHits := 0
@@ -90,15 +90,18 @@ func TestGetData(t *testing.T) {
 			break
 		}
 	}
+	cancel()
+	time.Sleep(time.Second)
 
 	// Check cancel works
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel = context.WithCancel(context.Background())
 	dataStream = con.GetData(ctx, testingIndex, -1)
 
 	totalHits = 0
 	for range dataStream {
 		totalHits++
 		cancel()
+		time.Sleep(time.Millisecond * 10) // Wait for it to actually cancel
 
 		if totalHits > 1 {
 			t.Errorf("Too many hits, cancel didn't work")
