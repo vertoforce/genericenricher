@@ -56,6 +56,26 @@ services:
       FTP_USER_HOME: /home/username
     restart: always
 
+  mysql:
+    image: mysql:5.7
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: pass
+      MYSQL_DATABASE: test
+  
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    links:
+      - mysql
+    environment:
+      PMA_HOST: "mysql"
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: "pass"
+    restart: always
+    ports:
+      - 80:80
+
 networks:
   # Network mostly needed for swarm
   # Set to bridge to test locally and have ports be outside accessible
