@@ -7,7 +7,7 @@ import (
 	"io"
 	"net"
 	"net/url"
-	"regexmachine"
+	"github.com/vertoforce/multiregex"
 	"regexp"
 
 	"github.com/olivere/elastic"
@@ -188,7 +188,7 @@ func (client *ELKClient) GetIndicesMatchingRules(ctx context.Context, rules []*r
 
 		// Check all docs
 		for hit := range dataStream {
-			ruleSet := regexmachine.RuleSet(rules)
+			ruleSet := multiregex.RuleSet(rules)
 			if len(ruleSet.GetMatchedRules(*hit.Source)) > 0 {
 				matchedIndices = append(matchedIndices, index)
 				break

@@ -3,9 +3,10 @@ package enrichers
 import (
 	"context"
 	"fmt"
-	"regexmachine"
 	"testing"
 	"time"
+
+	"github.com/vertoforce/multiregex"
 )
 
 func TestNewElK(t *testing.T) {
@@ -52,7 +53,7 @@ func TestGetIndices(t *testing.T) {
 	}
 
 	// Get matched indices with "match-all" rule
-	matchedIndices, err := con.GetIndicesMatchingRules(context.Background(), regexmachine.MatchAll, 500) // Limit to 500 docs to avoid long wait times
+	matchedIndices, err := con.GetIndicesMatchingRules(context.Background(), multiregex.MatchAll, 500) // Limit to 500 docs to avoid long wait times
 	if err != nil {
 		t.Errorf("Failed to get indices")
 	}

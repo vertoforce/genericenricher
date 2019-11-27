@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"regexmachine"
+	"github.com/vertoforce/multiregex"
 	"testing"
 	"time"
 )
@@ -70,7 +70,7 @@ func TestGetFilesMatchingRules(t *testing.T) {
 	}
 	defer client.Close()
 
-	files, err := client.GetFilesMatchingRules(context.Background(), regexmachine.MatchAll, 1024*1024*1024, 10)
+	files, err := client.GetFilesMatchingRules(context.Background(), multiregex.MatchAll, 1024*1024*1024, 10)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -80,7 +80,7 @@ func TestGetFilesMatchingRules(t *testing.T) {
 	}
 
 	// Check # of files limit
-	files, err = client.GetFilesMatchingRules(context.Background(), regexmachine.MatchAll, 1024*1024*1024, 1)
+	files, err = client.GetFilesMatchingRules(context.Background(), multiregex.MatchAll, 1024*1024*1024, 1)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
