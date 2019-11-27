@@ -8,7 +8,7 @@ import (
 	"net"
 	"net/url"
 	"path"
-	"regexmachine"
+	"github.com/vertoforce/multiregex"
 	"regexp"
 	"time"
 
@@ -263,7 +263,7 @@ func (client *FTPClient) getFilesMatchingRulesInDirInner(ctx context.Context, di
 
 		// Read data
 		readCtx, cancel := context.WithTimeout(ctx, time.Second*10)
-		matchedRules := regexmachine.RuleSet(rules).GetMatchedRulesReader(readCtx, ioutil.NopCloser(io.LimitReader(fileData, maxFileDownloadSize)))
+		matchedRules := multiregex.RuleSet(rules).GetMatchedRulesReader(readCtx, ioutil.NopCloser(io.LimitReader(fileData, maxFileDownloadSize)))
 		cancel()
 		fileData.Close()
 

@@ -13,7 +13,7 @@ import (
 // Server Interface to read data straight from a server
 type Server interface {
 	// Things to consider:
-	// GetItemsMatchingRules(regexmachine.RuleSet) []string
+	// GetItemsMatchingRules(multiregex.RuleSet) []string
 
 	GetIP() net.IP
 	GetPort() uint16
