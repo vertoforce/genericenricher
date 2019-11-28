@@ -62,7 +62,10 @@ func checkServerFunctionality(s Server, ip net.IP, port uint16) error {
 	// Check read
 	p := make([]byte, 10)
 	read, err := s.Read(p)
-	if read == 0 || (err != nil && err != io.EOF) {
+	if read == 0 {
+		return errors.New("Could not read any data")
+	}
+	if err != nil && err != io.EOF {
 		return err
 	}
 
