@@ -37,3 +37,4 @@ fmt.Println(indices)
 
 - FTP (Looking at file data)
 - ELK (Looking at data in indices)
+- SQL (Reading data in database tables)
