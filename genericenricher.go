@@ -24,7 +24,7 @@ type Server interface {
 	ResetReader() error // Go back to start of data
 }
 
-// GetServer Given a connection string, attempt to determine server type and return a Server
+// GetServer Given a connection string, attempt to determine server type and return a Server, if you know the server type use GetServerWithType.
 func GetServer(connectString string) (Server, error) {
 	// Detect type
 	serverType := enrichers.DetectServerType(connectString)
