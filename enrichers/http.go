@@ -2,7 +2,6 @@ package enrichers
 
 import (
 	"context"
-	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -60,7 +59,7 @@ func (client *HTTPClient) GetPort() uint16 {
 
 // IsConnected Is server connected.  Will attempt to open a connection
 func (client *HTTPClient) IsConnected() bool {
-	return client.reader == nil
+	return client.reader != nil
 }
 
 // Type Returns HTTP
@@ -84,9 +83,6 @@ func (client *HTTPClient) Close() error {
 
 // Read headers, cookies, then body
 func (client *HTTPClient) Read(p []byte) (n int, err error) {
-	if !client.IsConnected() {
-		return 0, errors.New("not connected")
-	}
 	if client.reader == nil {
 		err = client.ResetReader()
 		if err != nil {
