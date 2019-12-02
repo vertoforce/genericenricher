@@ -49,5 +49,8 @@ func DetectServerType(connectString string) ServerType {
 		}
 	}
 
+	// TODO: Check if multiple matched
+	// TODO: Attempt connection to server if there is no protocol
+
 	return Unknown
 }
