@@ -1,8 +1,9 @@
 # GenericEnricher
 
 The genericenricher package is meant to act as a black box.
-You give a connection url such as `ftp://localhost:21` and are given a set of functions to perform generic actions.  The returned server object will be connected to the server.
-For example:
+You give a connection url such as `ftp://localhost:21` and you can read raw data from the server.  You are also given a set of generic functions to call.  The returned server object will be connected to the server.
+
+## Usage
 
 ```go
 server, err := GetServer("http://localhost:9200")
@@ -38,3 +39,4 @@ fmt.Println(indices)
 - FTP (Looking at file data)
 - ELK (Looking at data in indices)
 - SQL (Reading data in database tables)
+- HTTP (Read webpage, might implement crawling in the future)
