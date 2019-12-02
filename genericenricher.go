@@ -40,6 +40,8 @@ func GetServerWithType(connectString string, serverType enrichers.ServerType) (S
 		return enrichers.NewFTP(connectString)
 	case enrichers.SQL:
 		return enrichers.NewSQL(connectString)
+	case enrichers.HTTP:
+		return enrichers.NewHTTP(connectString)
 	default:
 		return nil, errors.New("unknown server type")
 	}

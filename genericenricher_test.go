@@ -17,6 +17,8 @@ func TestGetServerWithType(t *testing.T) {
 		ip         net.IP
 		port       uint16
 	}{
+		// Local HTTP
+		{"http://localhost", enrichers.HTTP, net.IPv6loopback, 80},
 		// Local ELK
 		{"http://localhost:9200", enrichers.ELK, net.IPv6loopback, 9200},
 		// Local FTP
