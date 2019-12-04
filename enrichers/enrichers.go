@@ -6,6 +6,8 @@ import (
 	"regexp"
 )
 
+//go:generate stringer -type=ServerType
+
 // ServerType Type of server (ELK, FTP, etc)
 type ServerType int
 
