@@ -7,8 +7,9 @@ import (
 	"io"
 	"net"
 	"net/url"
-	"github.com/vertoforce/multiregex"
 	"regexp"
+
+	"github.com/vertoforce/multiregex"
 
 	"github.com/olivere/elastic"
 )
@@ -105,6 +106,7 @@ func (client *ELKClient) Close() error {
 }
 
 // Read Returns all data from all indices on server
+// TODO: Fix this, not reading all data from server
 func (client *ELKClient) Read(p []byte) (n int, err error) {
 	if !client.IsConnected() {
 		return 0, errors.New("not connected")
@@ -277,7 +279,7 @@ func (client *ELKClient) GetData(ctx context.Context, indexName string, limit in
 		// Scroll
 		scrollService := elastic.NewScrollService(client.client)
 		scrollService.Index(indexName)
-		scrollService.Size(10)
+		scrollService.Size(40)
 		defer scrollService.Clear(ctx) // Not sure what context to use here
 
 		// Read all data
