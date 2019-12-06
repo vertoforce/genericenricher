@@ -2,6 +2,7 @@ package enrichers
 
 import (
 	"fmt"
+	"net"
 	"net/url"
 	"regexp"
 )
@@ -55,4 +56,22 @@ func DetectServerType(connectString string) ServerType {
 	// TODO: Attempt connection to server if there is no protocol
 
 	return Unknown
+}
+
+// GetConnectString Given ip, port, and type get the connection string for a server
+func GetConnectString(ip net.IP, port int, serverType ServerType) string {
+	// TODO: Add user/pass?
+	switch serverType {
+	case ELK:
+		return fmt.Sprintf("http://%s:%d", ip.String(), port)
+	case FTP:
+		return fmt.Sprintf("ftp://%s:%d", ip.String(), port)
+	case HTTP:
+		return fmt.Sprintf("ssh://%s:%d", ip.String(), port)
+	case SQL:
+		// TODO:
+		return fmt.Sprintf("%s:%d", ip.String(), port)
+	default:
+		return fmt.Sprintf("%s:%d", ip.String(), port)
+	}
 }
