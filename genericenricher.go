@@ -32,6 +32,7 @@ func GetServer(connectString string) (Server, error) {
 }
 
 // GetServerWithType Given a connection string and server type, return a Server
+// If you do not know the connectString use `enrichers.GetConnectionString`
 func GetServerWithType(connectString string, serverType enrichers.ServerType) (Server, error) {
 	switch serverType {
 	case enrichers.ELK:
