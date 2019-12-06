@@ -22,7 +22,7 @@ func stringSizeToUint(size string) uint64 {
 		return 0
 	}
 	if len(size) < 2 {
-		err = errors.New("too small")
+		return 0
 	}
 
 	// Parse
