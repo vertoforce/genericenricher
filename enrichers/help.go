@@ -68,7 +68,7 @@ func urlToIP(url *url.URL) net.IP {
 
 // urlToPort return uint16 port form url
 func urlToPort(url *url.URL) uint16 {
-	port, err := strconv.ParseInt(url.Port(), 10, 16)
+	port, err := strconv.ParseInt(url.Port(), 10, 32)
 	if err != nil {
 		return 0
 	}
