@@ -58,8 +58,8 @@ func DetectServerType(connectString string) ServerType {
 	return Unknown
 }
 
-// GetConnectString Given ip, port, and type get the connection string for a server
-func GetConnectString(ip net.IP, port int, serverType ServerType) string {
+// GetConnectionString Given ip, port, and type get the connection string for a server
+func GetConnectionString(ip net.IP, port int, serverType ServerType) string {
 	// TODO: Add user/pass?
 	switch serverType {
 	case ELK:
