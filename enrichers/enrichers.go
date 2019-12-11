@@ -67,7 +67,7 @@ func GetConnectionString(ip net.IP, port int, serverType ServerType) string {
 	case FTP:
 		return fmt.Sprintf("ftp://%s:%d", ip.String(), port)
 	case HTTP:
-		return fmt.Sprintf("ssh://%s:%d", ip.String(), port)
+		return fmt.Sprintf("http://%s:%d", ip.String(), port)
 	case SQL:
 		// TODO:
 		return fmt.Sprintf("%s:%d", ip.String(), port)
