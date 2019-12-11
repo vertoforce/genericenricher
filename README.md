@@ -6,22 +6,20 @@ You give a connection url such as `ftp://localhost:21` and you can read raw data
 ## Usage
 
 ```go
-server, err := GetServer("http://localhost:9200")
-if err != nil {
-    return
-}
+// This code does not check for errors
+server, _ := GetServer("http://localhost:9200")
+_ = server.Connect()
 
 p := make([]byte, 10)
-server.Read(p)
+read, _ = server.Read(p)
 ```
 
 You can also run **specific functions** if you know the server type.  For example:
 
 ```go
-server, err := GetServer("http://localhost:9200")
-if err != nil {
-    return
-}
+// This code does not check for errors
+server, _ := GetServer("http://localhost:9200")
+_ = server.Connect()
 
 // Convert to ELK Client
 ELKServer := server.(*enrichers.ELKClient)

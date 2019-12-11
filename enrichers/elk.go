@@ -48,12 +48,6 @@ func NewELK(urlString string) (*ELKClient, error) {
 	}
 	client.url = url
 
-	// Connect
-	err = client.Connect()
-	if err != nil {
-		return nil, err
-	}
-
 	// TODO: Check for user/pass
 
 	return &client, nil
