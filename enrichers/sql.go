@@ -31,11 +31,6 @@ func NewSQL(urlString string) (*SQLClient, error) {
 		return nil, err
 	}
 
-	err = client.Connect()
-	if err != nil {
-		return nil, err
-	}
-
 	return client, nil
 }
 

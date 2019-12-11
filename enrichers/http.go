@@ -35,11 +35,6 @@ func NewHTTP(urlString string) (*HTTPClient, error) {
 		return nil, err
 	}
 
-	err = client.Connect()
-	if err != nil {
-		return nil, err
-	}
-
 	return client, nil
 }
 

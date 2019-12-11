@@ -7,16 +7,12 @@ import (
 )
 
 func ExampleGetServerWithType() {
-	server, err := GetServerWithType("http://localhost:9200", enrichers.ELK)
-	if err != nil {
-		return
-	}
+	// This code does not check for errors
+	server, _ := GetServerWithType("http://localhost:9200", enrichers.ELK)
+	_ = server.Connect()
 
 	p := make([]byte, 10)
-	read, err := server.Read(p)
-	if err != nil {
-		return
-	}
+	read, _ := server.Read(p)
 
 	fmt.Printf("Read %d bytes: %v\n", read, p)
 }

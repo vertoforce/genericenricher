@@ -8,9 +8,10 @@ import (
 	"net"
 	"net/url"
 	"path"
-	"github.com/vertoforce/multiregex"
 	"regexp"
 	"time"
+
+	"github.com/vertoforce/multiregex"
 
 	"github.com/jlaffaye/ftp"
 )
@@ -46,12 +47,6 @@ func NewFTP(urlString string) (*FTPClient, error) {
 		if password, passwordSet := client.url.User.Password(); passwordSet {
 			client.password = password
 		}
-	}
-
-	// Attempt connection
-	err = client.Connect()
-	if err != nil {
-		return nil, err
 	}
 
 	return client, nil
