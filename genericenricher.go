@@ -18,6 +18,7 @@ type Server interface {
 
 	GetIP() net.IP
 	GetPort() uint16
+	GetConnectString() string
 	Connect(ctx context.Context) error
 	IsConnected() bool
 	Type() enrichers.ServerType

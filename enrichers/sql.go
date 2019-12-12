@@ -3,14 +3,18 @@ package enrichers
 import (
 	"context"
 	"database/sql"
+	"github.com/go-sql-driver/mysql"
 	"io"
 	"net"
 	"net/url"
+	"strconv"
+	"strings"
 	// Using go sql driver
 )
 
 // SQLClient SQL Client
 type SQLClient struct {
+	config       *mysql.Config
 	url          *url.URL
 	db           *sql.DB
 	reader       io.ReadCloser
@@ -25,6 +29,10 @@ func NewSQL(urlString string) (*SQLClient, error) {
 	// Parse URL
 	var err error
 	client.url, err = url.Parse(urlString)
+	if err != nil {
+		return nil, err
+	}
+	client.config, err = mysql.ParseDSN(urlString)
 	if err != nil {
 		return nil, err
 	}
@@ -51,17 +59,39 @@ func (client *SQLClient) Connect(ctx context.Context) error {
 
 // GetIP Get IP of SQL server
 func (client *SQLClient) GetIP() net.IP {
-	// TODO: Fix this
-	return urlToIP(client.url)
+	if colon := strings.Index(client.config.Addr, ":"); colon != -1 {
+		return net.ParseIP(client.config.Addr[0:colon])
+	} else {
+		return net.ParseIP(client.config.Addr)
+	}
 }
 
 // GetPort Get port of SQL server
 func (client *SQLClient) GetPort() uint16 {
-	return urlToPort(client.url)
+	p := ""
+	if colon := strings.Index(client.config.Addr, ":"); colon != -1 {
+		p = client.config.Addr[colon+1:]
+	} else {
+		p = "3306"
+	}
+	// Parse
+	port, err := strconv.ParseUint(p, 10, 16)
+	if err != nil {
+		return 3306
+	}
+	return uint16(port)
+}
+
+// GetConnectString Get connect string
+func (client *SQLClient) GetConnectString() string {
+	return client.url.String()
 }
 
 // IsConnected Is server connected.  Will attempt to open a connection
 func (client *SQLClient) IsConnected() bool {
+	if client.db == nil {
+		return false
+	}
 	return client.db.Ping() == nil
 }
 
