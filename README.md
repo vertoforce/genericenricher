@@ -38,3 +38,7 @@ fmt.Println(indices)
 - ELK (Looking at data in indices)
 - SQL (Reading data in database tables)
 - HTTP (Read webpage, might implement crawling in the future)
+
+## Known Issues
+
+- Currently with some early ELK versions the Read() only manages to read the first 100 documents because the server does not support scrolling
