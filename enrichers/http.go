@@ -6,16 +6,10 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"time"
-)
-
-const (
-	defaultHTTPTimeout = time.Second * 5
 )
 
 // HTTPClient HTTP Client
 type HTTPClient struct {
-	Timeout      time.Duration
 	url          *url.URL
 	reader       io.ReadCloser
 	response     *http.Response
@@ -26,7 +20,6 @@ type HTTPClient struct {
 // NewHTTP Create new HTTP client
 func NewHTTP(urlString string) (*HTTPClient, error) {
 	client := &HTTPClient{}
-	client.Timeout = defaultHTTPTimeout
 
 	// Parse URL
 	var err error
@@ -39,9 +32,10 @@ func NewHTTP(urlString string) (*HTTPClient, error) {
 }
 
 // Connect and open reader
-func (client *HTTPClient) Connect() error {
-	httpClient := http.Client{Timeout: client.Timeout}
-	response, err := httpClient.Get(client.url.String())
+func (client *HTTPClient) Connect(ctx context.Context) error {
+	req, err := http.NewRequest("GET", client.url.String(), nil)
+	req = req.WithContext(ctx)
+	response, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}

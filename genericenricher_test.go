@@ -1,6 +1,7 @@
 package genericenricher
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -51,7 +52,7 @@ func checkServerFunctionality(s Server, ip net.IP, port uint16) error {
 	}
 
 	// Connect
-	err := s.Connect()
+	err := s.Connect(context.Background())
 	if err != nil {
 		return errors.New("error connecting to server")
 	}

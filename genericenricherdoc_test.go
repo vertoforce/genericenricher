@@ -1,6 +1,7 @@
 package genericenricher
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/vertoforce/genericenricher/enrichers"
@@ -9,7 +10,7 @@ import (
 func ExampleGetServerWithType() {
 	// This code does not check for errors
 	server, _ := GetServerWithType("http://localhost:9200", enrichers.ELK)
-	_ = server.Connect()
+	_ = server.Connect(context.Background())
 
 	p := make([]byte, 10)
 	read, _ := server.Read(p)

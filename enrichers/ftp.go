@@ -53,8 +53,8 @@ func NewFTP(urlString string) (*FTPClient, error) {
 }
 
 // Connect to FTP server
-func (client *FTPClient) Connect() error {
-	c, err := ftp.Dial(net.JoinHostPort(client.url.Hostname(), client.url.Port()), ftp.DialWithTimeout(5*time.Second))
+func (client *FTPClient) Connect(ctx context.Context) error {
+	c, err := ftp.Dial(net.JoinHostPort(client.url.Hostname(), client.url.Port()), ftp.DialWithContext(ctx))
 	if err != nil {
 		return err
 	}

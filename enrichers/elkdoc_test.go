@@ -7,7 +7,7 @@ import (
 
 func ExampleNewELK() {
 	elk, _ := NewELK("http://127.0.0.1:9200")
-	_ = elk.Connect()
+	_ = elk.Connect(context.Background())
 }
 
 func ExampleELKClient_GetIndices() {
@@ -15,7 +15,7 @@ func ExampleELKClient_GetIndices() {
 	if err != nil {
 		panic(err)
 	}
-	err = con.Connect()
+	err = con.Connect(context.Background())
 	if err != nil {
 		panic(err)
 	}

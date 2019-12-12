@@ -6,9 +6,7 @@ import (
 	"io"
 	"net"
 	"net/url"
-
 	// Using go sql driver
-	_ "github.com/go-sql-driver/mysql"
 )
 
 // SQLClient SQL Client
@@ -35,20 +33,19 @@ func NewSQL(urlString string) (*SQLClient, error) {
 }
 
 // Connect to SQL server
-func (client *SQLClient) Connect() error {
+func (client *SQLClient) Connect(ctx context.Context) error {
 	db, err := sql.Open("mysql", client.url.String())
 	if err != nil {
 		return err
 	}
 
 	// Open doesn't open a connection. Validate DSN data:
-	err = db.Ping()
+	err = db.PingContext(ctx)
 	if err != nil {
 		return err
 	}
 
 	client.db = db
-
 	return nil
 }
 
@@ -142,6 +139,7 @@ func (client *SQLClient) Dump(ctx context.Context) (io.ReadCloser, error) {
 
 // GetTables Get mysql table names
 func (client *SQLClient) GetTables() []string {
+	// TODO: This will panic if connect fails
 	rows, err := client.db.Query("SHOW TABLES")
 	if err != nil {
 		return []string{}
