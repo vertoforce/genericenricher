@@ -75,8 +75,16 @@ func (client *ELKClient) GetPort() uint16 {
 	return urlToPort(client.url)
 }
 
+// GetConnectString Get connect string
+func (client *ELKClient) GetConnectString() string {
+	return client.url.String()
+}
+
 // IsConnected Is server connected
 func (client *ELKClient) IsConnected() bool {
+	if client.client == nil {
+		return false
+	}
 	return client.client.IsRunning()
 }
 

@@ -11,6 +11,10 @@ import (
 	"github.com/vertoforce/genericenricher/enrichers"
 )
 
+var (
+	localhost = net.IP{127, 0, 0, 1}
+)
+
 func TestGetServerWithType(t *testing.T) {
 	tests := []struct {
 		url        string
@@ -19,13 +23,13 @@ func TestGetServerWithType(t *testing.T) {
 		port       uint16
 	}{
 		// Local HTTP
-		{"http://localhost", enrichers.HTTP, net.IPv6loopback, 80},
+		{"http://localhost", enrichers.HTTP, localhost, 80},
 		// Local ELK
-		{"http://localhost:9200", enrichers.ELK, net.IPv6loopback, 9200},
+		{"http://localhost:9200", enrichers.ELK, localhost, 9200},
 		// Local FTP
-		{"ftp://username:mypass@localhost:21", enrichers.FTP, net.IPv6loopback, 21},
+		{"ftp://username:mypass@localhost:21", enrichers.FTP, localhost, 21},
 		// Local SQL
-		{"root:pass@tcp(127.0.0.1:3306)/test", enrichers.SQL, net.IPv6loopback, 3306},
+		{"mysql://root:pass@tcp(127.0.0.1:3306)/test", enrichers.SQL, localhost, 3306},
 	}
 
 	for _, test := range tests {
@@ -48,6 +52,7 @@ func checkServerFunctionality(s Server, ip net.IP, port uint16) error {
 		return errors.New("bad ip")
 	}
 	if s.GetPort() != port {
+		fmt.Println(s.GetPort())
 		return errors.New("bad port")
 	}
 

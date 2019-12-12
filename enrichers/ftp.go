@@ -79,6 +79,11 @@ func (client *FTPClient) GetPort() uint16 {
 	return urlToPort(client.url)
 }
 
+// GetConnectString Get connect string
+func (client *FTPClient) GetConnectString() string {
+	return client.url.String()
+}
+
 // IsConnected Is server connected
 func (client *FTPClient) IsConnected() bool {
 	if client.client == nil {

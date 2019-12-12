@@ -54,6 +54,11 @@ func (client *HTTPClient) GetPort() uint16 {
 	return urlToPort(client.url)
 }
 
+// GetConnectString Get connect string
+func (client *HTTPClient) GetConnectString() string {
+	return client.url.String()
+}
+
 // IsConnected Is server connected.  Will attempt to open a connection
 func (client *HTTPClient) IsConnected() bool {
 	return client.reader != nil
