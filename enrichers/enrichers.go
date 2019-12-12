@@ -3,7 +3,6 @@ package enrichers
 import (
 	"fmt"
 	"net"
-	"net/url"
 	"regexp"
 )
 
@@ -39,12 +38,6 @@ var serverTypeRegexes = []serverRegex{
 
 // DetectServerType Get type of server by looking at URL and/or poking at server
 func DetectServerType(connectString string) ServerType {
-	connectURL, err := url.Parse(connectString)
-	if err != nil {
-		return Unknown
-	}
-	fmt.Println(connectURL)
-
 	// Check regexes
 	for _, serverTypeRegex := range serverTypeRegexes {
 		if serverTypeRegex.regex.MatchString(connectString) {
