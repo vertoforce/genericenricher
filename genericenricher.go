@@ -3,6 +3,7 @@
 package genericenricher
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net"
@@ -17,7 +18,7 @@ type Server interface {
 
 	GetIP() net.IP
 	GetPort() uint16
-	Connect() error
+	Connect(ctx context.Context) error
 	IsConnected() bool
 	Type() enrichers.ServerType
 	io.ReadCloser

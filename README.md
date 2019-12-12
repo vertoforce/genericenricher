@@ -8,7 +8,7 @@ You give a connection url such as `ftp://localhost:21` and you can read raw data
 ```go
 // This code does not check for errors
 server, _ := GetServer("http://localhost:9200")
-_ = server.Connect()
+_ = server.Connect(context.Background())
 
 p := make([]byte, 10)
 read, _ = server.Read(p)
@@ -19,7 +19,7 @@ You can also run **specific functions** if you know the server type.  For exampl
 ```go
 // This code does not check for errors
 server, _ := GetServer("http://localhost:9200")
-_ = server.Connect()
+_ = server.Connect(context.Background())
 
 // Convert to ELK Client
 ELKServer := server.(*enrichers.ELKClient)

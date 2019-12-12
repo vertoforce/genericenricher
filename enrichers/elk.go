@@ -54,12 +54,13 @@ func NewELK(urlString string) (*ELKClient, error) {
 }
 
 // Connect to ELK server
-func (client *ELKClient) Connect() error {
-	var err error
-	client.client, err = elastic.NewSimpleClient(elastic.SetURL(client.url.String()))
+func (client *ELKClient) Connect(ctx context.Context) error {
+	c, err := elastic.DialContext(ctx, elastic.SetURL(client.url.String()))
 	if err != nil {
 		return err
 	}
+
+	client.client = c
 
 	return nil
 }
