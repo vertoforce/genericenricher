@@ -1,5 +1,9 @@
 # GenericEnricher
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/vertoforce/genericenricher)](https://goreportcard.com/report/github.com/vertoforce/genericenricher)
+[![Documentation](https://godoc.org/github.com/vertoforce/genericenricher?status.svg)](https://godoc.org/github.com/vertoforce/genericenricher)
+
+
 The genericenricher package is meant to act as a black box.
 You give a connection url such as `ftp://localhost:21` and you can read raw data from the server.  You are also given a set of generic functions to call.  The returned server object will be connected to the server.
 
